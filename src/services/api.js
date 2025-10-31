@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://back-end-albuhairaadmenpanel.onrender.com'; // رابط الـ backend
+const API_URL = 'https://admin-panel-albuhaira-alarabia.onrender.com'; // رابط الـ backend
 
 const api = axios.create({
   baseURL: API_URL,
