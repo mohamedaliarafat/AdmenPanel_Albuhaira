@@ -2,9 +2,9 @@ import axios from 'axios';
 
 const API_URL = 'https://back-end-albuhairaadmenpanel.onrender.com'; // رابط الباك إند النهائي
 
-// const api = axios.create({
-//   baseURL: API_URL,
-// });
+const api = axios.create({
+  baseURL: API_URL,
+});
 
 export const sendOTP = (phone) => {
   return axios.post(`${API_URL}/auth/send-otp`, { phone });
