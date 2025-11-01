@@ -229,7 +229,7 @@ const LoginPage = () => {
       setLoading(true);
       setError(null);
       try {
-        await api.post('/api/auth/send-otp', { phone: `+${phone}` });
+        await api.post('/auth/send-otp', { phone: `+${phone}` });
         setStep(2);
       } catch (err) {
         setError(err.response?.data?.message || T.errorFail);
@@ -246,7 +246,7 @@ const LoginPage = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await api.post('/api/auth/verify-otp', { phone: `+${phone}`, code: otp });
+        const res = await api.post('/auth/verify-otp', { phone: `+${phone}`, code: otp });
         localStorage.setItem('token', res.data.token);
         window.location.href = '/dashboard';
       } catch (err) {
