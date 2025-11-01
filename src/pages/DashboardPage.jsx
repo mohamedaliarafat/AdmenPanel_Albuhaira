@@ -1,275 +1,248 @@
 import React, { useEffect, useState, useContext } from "react";
-import api from "../services/api"; // ✅ تصحيح المسار الصحيح
 import {
-  Typography,
-  Grid,
-  Paper,
-  AppBar,
-  Toolbar,
-  IconButton,
-  Menu,
-  MenuItem,
-  Avatar,
-  Box,
-  Switch,
-  FormControlLabel,
-  useTheme,
+  Typography,
+  Grid,
+  Paper,
+  AppBar,
+  Toolbar,
+  IconButton,
+  Menu,
+  MenuItem,
+  Avatar,
+  Box,
+  Switch,
+  FormControlLabel,
+  useTheme,
+  // 🆕 المكونات الجديدة
+  Drawer,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
 } from "@mui/material";
 import {
-  Language as LanguageIcon,
-  Brightness4 as DarkModeIcon,
-  Brightness7 as LightModeIcon,
+  Language as LanguageIcon,
+  Menu as MenuIcon, // 🆕 أيقونة الهمبرغر
+  Home as HomeIcon, // أيقونات للشريط الجانبي
+  People as PeopleIcon,
+  ShoppingCart as ShoppingCartIcon,
+  Inventory as InventoryIcon,
 } from "@mui/icons-material";
-import { ColorModeContext } from "../App"; // ✅ تأكد أن App.jsx فيه ColorModeContext
+import { ColorModeContext } from "../App";
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
 } from "recharts";
 
-// 📊 بيانات الشارت التجريبية
+// 📊 بيانات تجريبية للشارت
 const chartData = [
-  { name: "يناير", users: 400, orders: 240 },
-  { name: "فبراير", users: 300, orders: 139 },
-  { name: "مارس", users: 200, orders: 980 },
-  { name: "أبريل", users: 278, orders: 390 },
-  { name: "مايو", users: 189, orders: 480 },
-  { name: "يونيو", users: 239, orders: 380 },
+  { name: "يناير", users: 400, orders: 240 },
+  { name: "فبراير", users: 300, orders: 139 },
+  { name: "مارس", users: 200, orders: 980 },
+  { name: "أبريل", users: 278, orders: 390 },
+  { name: "مايو", users: 189, orders: 480 },
+  { name: "يونيو", users: 239, orders: 380 },
+];
+
+// 📋 عناصر قائمة الشريط الجانبي
+const sidebarItems = [
+  { text: "نظرة عامة", icon: <HomeIcon />, path: "/dashboard" },
+  { text: "المستخدمون", icon: <PeopleIcon />, path: "/users" },
+  { text: "الطلبات", icon: <ShoppingCartIcon />, path: "/orders" },
+  { text: "المنتجات", icon: <InventoryIcon />, path: "/products" },
 ];
 
 const DashboardPage = () => {
-  const [stats, setStats] = useState({ users: 0, orders: 0, products: 0 });
-  const [error, setError] = useState(null);
-  const [anchorElUser, setAnchorElUser] = useState(null);
-  const [anchorElLang, setAnchorElLang] = useState(null);
-  const [language, setLanguage] = useState("ar");
+  const [stats, setStats] = useState({ users: 0, orders: 0, products: 0 });
+  const [anchorElUser, setAnchorElUser] = useState(null);
+  const [anchorElLang, setAnchorElLang] = useState(null);
+  const [language, setLanguage] = useState("ar");
+  const [openDrawer, setOpenDrawer] = useState(false); // 🆕 حالة الشريط الجانبي
 
-  const theme = useTheme();
-  const colorMode = useContext(ColorModeContext);
+  const theme = useTheme();
+  const colorMode = useContext(ColorModeContext);
 
-  // 🔄 جلب الإحصائيات من API
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("يرجى تسجيل الدخول أولاً.");
+  // 🔄 مؤقتًا: استخدام بيانات ثابتة بدون API
+  useEffect(() => {
+    setStats({ users: 120, orders: 75, products: 50 });
+  }, []);
 
-        const config = { headers: { Authorization: `Bearer ${token}` } };
+  // 📌 دوال التحكم في القوائم
+  const handleOpenUserMenu = (event) => setAnchorElUser(event.currentTarget);
+  const handleCloseUserMenu = () => setAnchorElUser(null);
 
-        const [usersRes, ordersRes, productsRes] = await Promise.all([
-          api.get("/users", config),
-          api.get("/orders", config),
-          api.get("/products", config),
-        ]);
+  const handleOpenLangMenu = (event) => setAnchorElLang(event.currentTarget);
+  const handleCloseLangMenu = () => setAnchorElLang(null);
 
-        setStats({
-          users: usersRes.data.length || 0,
-          orders: ordersRes.data.length || 0,
-          products: productsRes.data.length || 0,
-        });
-      } catch (err) {
-        setError(
-          err.response?.data?.message || "حدث خطأ أثناء جلب البيانات 😢"
-        );
-      }
-    };
+  const handleLanguageChange = (lang) => {
+    setLanguage(lang);
+    handleCloseLangMenu();
+  };
 
-    fetchStats();
-  }, []);
+  // 🆕 دالة فتح وإغلاق الشريط الجانبي
+  const toggleDrawer = (open) => (event) => {
+    if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
+      return;
+    }
+    setOpenDrawer(open);
+  };
 
-  // 📌 دوال التحكم في القوائم
-  const handleOpenUserMenu = (event) => setAnchorElUser(event.currentTarget);
-  const handleCloseUserMenu = () => setAnchorElUser(null);
+  // 🆕 محتوى الشريط الجانبي
+  const drawerList = () => (
+    <Box
+      sx={{ width: 250 }}
+      role="presentation"
+      onClick={toggleDrawer(false)}
+      onKeyDown={toggleDrawer(false)}
+    >
+      <Box sx={{ p: 2, textAlign: 'center', borderBottom: `1px solid ${theme.palette.divider}` }}>
+        <Typography variant="h6" color="primary" fontWeight="bold">لوحة التحكم</Typography>
+      </Box>
+      <List>
+        {sidebarItems.map((item) => (
+          <ListItem button key={item.text} 
+            // مثال لتحديد العنصر الحالي
+            selected={item.text === "نظرة عامة"} 
+          >
+            <ListItemIcon sx={{ minWidth: '40px', color: theme.palette.secondary.main }}>
+              {item.icon}
+            </ListItemIcon>
+            <ListItemText primary={item.text} />
+          </ListItem>
+        ))}
+      </List>
+    </Box>
+  );
 
-  const handleOpenLangMenu = (event) => setAnchorElLang(event.currentTarget);
-  const handleCloseLangMenu = () => setAnchorElLang(null);
+  return (
+    <Box sx={{ flexGrow: 1 }}>
+      {/* 🔹 الشريط العلوي */}
+      <AppBar
+        position="static"
+        sx={{
+          // تصميم عصري للشريط
+          background: `linear-gradient(to right, #1976D2, #2196F3)`, // ألوان أزرق زاهية
+        }}
+      >
+        <Toolbar>
+          {/* 🆕 زر فتح الشريط الجانبي (ثلاث شرط) */}
+          <IconButton
+            size="large"
+            edge="start"
+            color="inherit"
+            aria-label="menu"
+            sx={{ mr: 2 }}
+            onClick={toggleDrawer(true)}
+          >
+            <MenuIcon />
+          </IconButton>
 
-  const handleLanguageChange = (lang) => {
-    setLanguage(lang);
-    handleCloseLangMenu();
-  };
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: "bold" }}>
+            لوحة التحكم السعودية 🇸🇦
+          </Typography>
 
-  return (
-    <Box sx={{ flexGrow: 1 }}>
-      {/* 🔹 الشريط العلوي */}
-      <AppBar
-        position="static"
-        sx={{
-          background: `linear-gradient(to right, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
-        }}
-      >
-        <Toolbar>
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{ flexGrow: 1, fontWeight: "bold" }}
-          >
-            لوحة التحكم السعودية 🇸🇦
-          </Typography>
+          {/* 🌙 زر تبديل الوضع (محافظة على نفس التصميم) */}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={theme.palette.mode === "dark"}
+                onChange={colorMode.toggleColorMode}
+                sx={{
+                  "& .MuiSwitch-switchBase.Mui-checked": { color: "#66bb6a" },
+                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { backgroundColor: "#66bb6a" },
+                }}
+              />
+            }
+            labelPlacement="start"
+            label={
+              <Typography sx={{ color: "white", fontSize: "0.8rem" }}>
+                {theme.palette.mode === "dark" ? "داكن" : "فاتح"}
+              </Typography>
+            }
+          />
 
-          {/* 🌙 زر تبديل الوضع */}
-          <FormControlLabel
-            control={
-              <Switch
-                checked={theme.palette.mode === "dark"}
-                onChange={colorMode.toggleColorMode}
-                sx={{
-                  "& .MuiSwitch-switchBase.Mui-checked": {
-                    color: "#66bb6a",
-                  },
-                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-                    backgroundColor: "#66bb6a",
-                  },
-                }}
-              />
-            }
-            labelPlacement="start"
-            label={
-              <Typography sx={{ color: "white", fontSize: "0.8rem" }}>
-                {theme.palette.mode === "dark" ? "الوضع الداكن" : "الوضع الفاتح"}
-              </Typography>
-            }
-          />
+          {/* 🌐 اختيار اللغة */}
+          <IconButton color="inherit" onClick={handleOpenLangMenu}>
+            <LanguageIcon />
+          </IconButton>
+          <Menu anchorEl={anchorElLang} open={Boolean(anchorElLang)} onClose={handleCloseLangMenu}>
+            <MenuItem onClick={() => handleLanguageChange("ar")} selected={language === "ar"}>العربية</MenuItem>
+            <MenuItem onClick={() => handleLanguageChange("en")} selected={language === "en"}>English</MenuItem>
+          </Menu>
 
-          {/* 🌐 اختيار اللغة */}
-          <IconButton color="inherit" onClick={handleOpenLangMenu}>
-            <LanguageIcon />
-          </IconButton>
-          <Menu
-            anchorEl={anchorElLang}
-            open={Boolean(anchorElLang)}
-            onClose={handleCloseLangMenu}
-          >
-            <MenuItem
-              onClick={() => handleLanguageChange("ar")}
-              selected={language === "ar"}
-            >
-              العربية
-            </MenuItem>
-            <MenuItem
-              onClick={() => handleLanguageChange("en")}
-              selected={language === "en"}
-            >
-              English
-            </MenuItem>
-          </Menu>
+          {/* 👤 بروفايل المستخدم */}
+          <IconButton color="inherit" onClick={handleOpenUserMenu} sx={{ ml: 2 }}>
+            <Avatar alt="Admin" src="/static/images/avatar/1.jpg" />
+          </IconButton>
+          <Menu anchorEl={anchorElUser} open={Boolean(anchorElUser)} onClose={handleCloseUserMenu}>
+            <MenuItem onClick={handleCloseUserMenu}>الملف الشخصي</MenuItem>
+            <MenuItem onClick={handleCloseUserMenu}>الإعدادات</MenuItem>
+            <MenuItem onClick={handleCloseUserMenu}>تسجيل الخروج</MenuItem>
+          </Menu>
+        </Toolbar>
+      </AppBar>
 
-          {/* 👤 بروفايل المستخدم */}
-          <IconButton color="inherit" onClick={handleOpenUserMenu} sx={{ ml: 2 }}>
-            <Avatar alt="Admin" src="/static/images/avatar/1.jpg" />
-          </IconButton>
-          <Menu
-            anchorEl={anchorElUser}
-            open={Boolean(anchorElUser)}
-            onClose={handleCloseUserMenu}
-          >
-            <MenuItem onClick={handleCloseUserMenu}>الملف الشخصي</MenuItem>
-            <MenuItem onClick={handleCloseUserMenu}>الإعدادات</MenuItem>
-            <MenuItem onClick={handleCloseUserMenu}>تسجيل الخروج</MenuItem>
-          </Menu>
-        </Toolbar>
-      </AppBar>
+      {/* 🆕 الشريط الجانبي (Drawer) */}
+      <Drawer
+        anchor="right" // تم تحديد مكانه على اليمين بما يتناسب مع اللغة العربية
+        open={openDrawer}
+        onClose={toggleDrawer(false)}
+      >
+        {drawerList()}
+      </Drawer>
 
-      {/* 🧾 محتوى الصفحة */}
-      <Box sx={{ p: 4 }}>
-        <Typography
-          variant="h4"
-          gutterBottom
-          sx={{ mb: 4, fontWeight: "bold", color: theme.palette.text.primary }}
-        >
-          نظرة عامة على الأداء
-        </Typography>
+      {/* 🧾 محتوى الصفحة */}
+      <Box sx={{ p: 4 }}>
+        <Typography variant="h4" gutterBottom sx={{ mb: 4, fontWeight: "bold", color: theme.palette.text.primary }}>
+          نظرة عامة على الأداء
+        </Typography>
 
-        {error && (
-          <Typography color="error" sx={{ mb: 3 }}>
-            {error}
-          </Typography>
-        )}
+        {/* 🔸 بطاقات الإحصائيات (لم يتم تغييرها) */}
+        <Grid container spacing={4} sx={{ mb: 5 }}>
+          {/* ... (باقي الكود كما هو) */}
+          {[
+            { title: "إجمالي المستخدمين", value: stats.users, color: "#FFD700" },
+            { title: "الطلبات المنجزة", value: stats.orders, color: "#66bb6a" },
+            { title: "المنتجات المتوفرة", value: stats.products, color: "#ef5350" },
+          ].map((card, idx) => (
+            <Grid item xs={12} sm={6} md={4} key={idx}>
+              <Paper elevation={3} sx={{ p: 3, textAlign: "center", backgroundColor: theme.palette.background.paper, borderTop: `4px solid ${card.color}` }}>
+                <Typography variant="h6" color="text.secondary">{card.title}</Typography>
+                <Typography variant="h3" color="primary.main" sx={{ fontWeight: "bold", mt: 1 }}>{card.value}</Typography>
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
 
-        {/* 🔸 بطاقات الإحصائيات */}
-        <Grid container spacing={4} sx={{ mb: 5 }}>
-          {[
-            { title: "إجمالي المستخدمين", value: stats.users, color: "#FFD700" },
-            { title: "الطلبات المنجزة", value: stats.orders, color: "#66bb6a" },
-            { title: "المنتجات المتوفرة", value: stats.products, color: "#ef5350" },
-          ].map((card, idx) => (
-            <Grid item xs={12} sm={6} md={4} key={idx}>
-              <Paper
-                elevation={3}
-                sx={{
-                  p: 3,
-                  textAlign: "center",
-                  backgroundColor: theme.palette.background.paper,
-                  borderTop: `4px solid ${card.color}`,
-                }}
-              >
-                <Typography variant="h6" color="text.secondary">
-                  {card.title}
-                </Typography>
-                <Typography
-                  variant="h3"
-                  color="primary.main"
-                  sx={{ fontWeight: "bold", mt: 1 }}
-                >
-                  {card.value}
-                </Typography>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
-
-        {/* 📈 رسم بياني */}
-        <Paper
-          elevation={3}
-          sx={{ p: 3, height: 450, backgroundColor: theme.palette.background.paper }}
-        >
-          <Typography
-            variant="h6"
-            gutterBottom
-            sx={{ fontWeight: "bold", color: theme.palette.text.primary }}
-          >
-            مقارنة أداء المستخدمين والطلبات
-          </Typography>
-          <ResponsiveContainer width="100%" height="85%">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
-              <XAxis dataKey="name" stroke={theme.palette.text.secondary} />
-              <YAxis stroke={theme.palette.text.secondary} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor:
-                    theme.palette.mode === "dark"
-                      ? theme.palette.primary.dark
-                      : theme.palette.background.paper,
-                  border: `1px solid ${theme.palette.secondary.main}`,
-                  borderRadius: 8,
-                }}
-                itemStyle={{ color: theme.palette.text.primary }}
-              />
-              <Line
-                type="monotone"
-                dataKey="users"
-                stroke={theme.palette.secondary.main}
-                strokeWidth={2}
-                activeDot={{ r: 8 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="orders"
-                stroke="#FFD700"
-                strokeWidth={2}
-                activeDot={{ r: 8 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </Paper>
-      </Box>
-    </Box>
-  );
+        {/* 📈 رسم بياني (لم يتم تغييره) */}
+        <Paper elevation={3} sx={{ p: 3, height: 450, backgroundColor: theme.palette.background.paper }}>
+          {/* ... (باقي كود الشارت كما هو) */}
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: "bold", color: theme.palette.text.primary }}>
+            مقارنة أداء المستخدمين والطلبات
+          </Typography>
+          <ResponsiveContainer width="100%" height="85%">
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+              <XAxis dataKey="name" stroke={theme.palette.text.secondary} />
+              <YAxis stroke={theme.palette.text.secondary} />
+              <Tooltip contentStyle={{
+                backgroundColor: theme.palette.mode === "dark" ? theme.palette.primary.dark : theme.palette.background.paper,
+                border: `1px solid ${theme.palette.secondary.main}`,
+                borderRadius: 8,
+              }} itemStyle={{ color: theme.palette.text.primary }} />
+              <Line type="monotone" dataKey="users" stroke={theme.palette.secondary.main} strokeWidth={2} activeDot={{ r: 8 }} />
+              <Line type="monotone" dataKey="orders" stroke="#FFD700" strokeWidth={2} activeDot={{ r: 8 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </Paper>
+      </Box>
+    </Box>
+  );
 };
 
 export default DashboardPage;
